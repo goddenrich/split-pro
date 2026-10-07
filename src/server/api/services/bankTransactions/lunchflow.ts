@@ -19,7 +19,13 @@ const ERROR_MESSAGES = {
 } as const;
 
 const AccountsResponse = z.object({
-  accounts: z.array(z.object({ id: z.union([z.number(), z.string()]) })),
+  accounts: z.array(
+    z.object({
+      id: z.union([z.number(), z.string()]),
+      name: z.string().nullish(),
+      institution_name: z.string().nullish(),
+    }),
+  ),
 });
 
 const TransactionsResponse = z.object({
@@ -37,6 +43,8 @@ const TransactionsResponse = z.object({
 });
 
 type LunchFlowTransaction = z.infer<typeof TransactionsResponse>['transactions'][number];
+type LunchFlowAccount = z.infer<typeof AccountsResponse>['accounts'][number];
+type WithAccountName = LunchFlowTransaction & { accountName?: string };
 
 /**
  * Lunch Flow personal API. The API key belongs to a single Lunch Flow user, so the connection is
@@ -106,18 +114,19 @@ export class LunchFlowService {
 
     const filters = this.returnTransactionFilters().toString();
     const responses = await Promise.all(
-      accounts.map((account) =>
-        this.get(
+      accounts.map(async (account) => {
+        const { transactions } = await this.get(
           `/accounts/${account.id}/transactions?${filters}`,
           TransactionsResponse,
           ERROR_MESSAGES.FAILED_FETCH_TRANSACTIONS,
-        ),
-      ),
+        );
+        const accountName = this.accountLabel(account);
+
+        return transactions.map((transaction) => ({ ...transaction, accountName }));
+      }),
     );
 
-    const formattedTransactions = this.formatTransactions(
-      responses.flatMap((response) => response.transactions),
-    );
+    const formattedTransactions = this.formatTransactions(responses.flat());
 
     await db.cachedBankData.upsert({
       where: { obapiProviderId: cacheKey, userId },
@@ -153,12 +162,17 @@ export class LunchFlowService {
     return `lunchflow-${userId ?? ''}`;
   }
 
-  private formatTransaction(transaction: LunchFlowTransaction): TransactionOutputItem {
+  private accountLabel(account: LunchFlowAccount) {
+    return [account.institution_name, account.name].filter(Boolean).join(' · ') || undefined;
+  }
+
+  private formatTransaction(transaction: WithAccountName): TransactionOutputItem {
     return {
       transactionId: transaction.id,
       bookingDate: transaction.date,
       description: transaction.description || transaction.merchant || '?',
       merchant: transaction.merchant || undefined,
+      accountName: transaction.accountName,
       transactionAmount: {
         amount: transaction.amount.toString(),
         currency: transaction.currency,
@@ -166,7 +180,7 @@ export class LunchFlowService {
     };
   }
 
-  private formatTransactions(transactions: LunchFlowTransaction[]): TransactionOutput {
+  private formatTransactions(transactions: WithAccountName[]): TransactionOutput {
     return {
       transactions: {
         booked: transactions.filter((t) => !t.isPending).map((t) => this.formatTransaction(t)),

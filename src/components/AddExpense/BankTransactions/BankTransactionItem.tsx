@@ -93,6 +93,9 @@ export const BankTransactionItem: React.FC<{
             ))}
         </div>
         <div>
+          {item.accountName && (
+            <p className="line-clamp-1 text-left text-xs text-gray-500">{item.accountName}</p>
+          )}
           <p
             className={cn(
               'line-clamp-2 text-left text-sm whitespace-break-spaces lg:text-base',

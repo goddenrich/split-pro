@@ -13,6 +13,7 @@ export const TransactionOutputItem = z.object({
   bookingDate: z.string(),
   description: z.string(),
   merchant: z.string().optional(),
+  accountName: z.string().optional(),
   transactionAmount: z.object({
     amount: z.string(),
     currency: z.string(),
