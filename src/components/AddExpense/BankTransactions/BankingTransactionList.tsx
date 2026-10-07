@@ -62,7 +62,9 @@ export const BankingTransactionList: React.FC<{
     const pending = mapTransactions(data.pending, true);
     const booked = mapTransactions(data.booked, false);
 
-    return [...pending, ...booked];
+    return [...pending, ...booked].toSorted(
+      (a, b) => new Date(b.bookingDate).getTime() - new Date(a.bookingDate).getTime(),
+    );
   };
 
   const alreadyAdded = useCallback(

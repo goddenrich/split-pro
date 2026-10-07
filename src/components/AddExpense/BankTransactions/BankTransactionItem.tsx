@@ -101,6 +101,9 @@ export const BankTransactionItem: React.FC<{
           >
             {item.description}
           </p>
+          {item.merchant && item.merchant !== item.description && (
+            <p className="line-clamp-1 text-left text-xs text-gray-500">{item.merchant}</p>
+          )}
           <p className="line-clamp-1 flex text-left text-xs whitespace-break-spaces text-gray-500">
             {item.pending && t('expense_details.pending')}{' '}
             {alreadyAdded && `(${t('expense_details.already_added')}${groupName})`}

@@ -158,6 +158,7 @@ export class LunchFlowService {
       transactionId: transaction.id,
       bookingDate: transaction.date,
       description: transaction.description || transaction.merchant || '?',
+      merchant: transaction.merchant || undefined,
       transactionAmount: {
         amount: transaction.amount.toString(),
         currency: transaction.currency,
