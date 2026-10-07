@@ -170,6 +170,9 @@
     "search_bank": "Search bank",
     "no_bank_providers_found": "No bank providers found",
     "to_bank": "to bank",
+    "lunchflow": {
+      "connected_successfully": "Lunch Flow connected successfully"
+    },
     "plaid": {
       "bank_connected_successfully": "Bank connected successfully",
       "bank_connection_failed": "Failed to connect to bank",

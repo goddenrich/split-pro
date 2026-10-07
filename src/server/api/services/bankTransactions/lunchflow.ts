@@ -50,6 +50,9 @@ export class LunchFlowService {
 
     if (!response.ok) {
       console.error('Lunch Flow request failed', path, response.status);
+      if (401 === response.status || 403 === response.status) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid Lunch Flow API key' });
+      }
       throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: errorMessage });
     }
 

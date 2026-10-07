@@ -1,4 +1,6 @@
+import { useTranslation } from 'next-i18next';
 import React, { useCallback } from 'react';
+import { toast } from 'sonner';
 import { BankAccountSelect } from './BankAccountSelect';
 import { PlaidLink } from './PlaidLink';
 import { api } from '~/utils/api';
@@ -15,6 +17,7 @@ export const BankConnection: React.FC<BankConnectionProps> = ({
   bankConnection,
   children,
 }) => {
+  const { t } = useTranslation();
   const userQuery = api.user.me.useQuery();
   const connectToBank = api.bankTransactions.connectToBank.useMutation();
 
@@ -32,15 +35,20 @@ export const BankConnection: React.FC<BankConnectionProps> = ({
         window.location.href = res.authLink;
       }
     } else if (bankConnection === 'LUNCHFLOW') {
-      await connectToBank.mutateAsync().catch(console.error);
-      fetchUser();
+      try {
+        await connectToBank.mutateAsync();
+        toast.success(t('bank_transactions.lunchflow.connected_successfully'));
+        fetchUser();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'An unexpected error occurred');
+      }
     } else if (bankConnection === 'PLAID') {
       const res = await connectToBank.mutateAsync().catch(console.error);
       if (res?.authLink) {
         return res.authLink;
       }
     }
-  }, [connectToBank, userQuery.data?.bankingId, bankConnection, fetchUser]);
+  }, [connectToBank, userQuery.data?.bankingId, bankConnection, fetchUser, t]);
 
   if (!bankConnectionEnabled) {
     return null;
