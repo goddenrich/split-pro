@@ -18,6 +18,10 @@ export const BankConnection: React.FC<BankConnectionProps> = ({
   const userQuery = api.user.me.useQuery();
   const connectToBank = api.bankTransactions.connectToBank.useMutation();
 
+  const fetchUser = useCallback(() => {
+    userQuery.refetch().catch(console.error);
+  }, [userQuery]);
+
   const onConnectToBank = useCallback(async () => {
     if (bankConnection === 'GOCARDLESS') {
       if (!userQuery.data?.bankingId) {
@@ -27,17 +31,16 @@ export const BankConnection: React.FC<BankConnectionProps> = ({
       if (res?.authLink) {
         window.location.href = res.authLink;
       }
+    } else if (bankConnection === 'LUNCHFLOW') {
+      await connectToBank.mutateAsync().catch(console.error);
+      fetchUser();
     } else if (bankConnection === 'PLAID') {
       const res = await connectToBank.mutateAsync().catch(console.error);
       if (res?.authLink) {
         return res.authLink;
       }
     }
-  }, [connectToBank, userQuery.data?.bankingId, bankConnection]);
-
-  const fetchUser = useCallback(() => {
-    userQuery.refetch().catch(console.error);
-  }, [userQuery]);
+  }, [connectToBank, userQuery.data?.bankingId, bankConnection, fetchUser]);
 
   if (!bankConnectionEnabled) {
     return null;
@@ -49,7 +52,9 @@ export const BankConnection: React.FC<BankConnectionProps> = ({
         <BankAccountSelect bankConnectionEnabled={bankConnectionEnabled} />
       )}
 
-      {bankConnection === 'PLAID' ? (
+      {'LUNCHFLOW' === bankConnection ? (
+        React.cloneElement(children, { onClick: onConnectToBank } as Partial<ButtonProps>)
+      ) : bankConnection === 'PLAID' ? (
         <PlaidLink onConnect={onConnectToBank} onSuccess={fetchUser}>
           {children}
         </PlaidLink>

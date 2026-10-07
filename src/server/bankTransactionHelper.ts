@@ -1,10 +1,13 @@
 import { env } from '~/env';
 
-export type BankProviders = 'GOCARDLESS' | 'PLAID';
+export type BankProviders = 'GOCARDLESS' | 'PLAID' | 'LUNCHFLOW';
 
 export const isBankConnectionConfigured = () => !!whichBankConnectionConfigured();
 
 export const whichBankConnectionConfigured = (): BankProviders | null => {
+  if (env.LUNCHFLOW_API_KEY) {
+    return 'LUNCHFLOW';
+  }
   if (env.GOCARDLESS_SECRET_ID && env.GOCARDLESS_SECRET_KEY && env.GOCARDLESS_COUNTRY) {
     return 'GOCARDLESS';
   }

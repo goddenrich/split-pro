@@ -62,6 +62,11 @@ Used for magic-link login and invites.
 - `PLAID_COUNTRY_CODES`: Country codes list (per Plaid docs).
 - `PLAID_INTERVAL_IN_DAYS`: Lookback window for fetching transactions (default 30 days).
 
+#### Lunch Flow
+
+- `LUNCHFLOW_API_KEY`: API key from an API destination in the Lunch Flow dashboard. The key belongs to one Lunch Flow user, so every SplitPro user on the instance sees the same accounts; intended for single-user/household instances.
+- `LUNCHFLOW_INTERVAL_IN_DAYS`: Lookback window for fetching transactions (default 30 days).
+
 #### GoCardless (deprecated)
 
 - `GOCARDLESS_COUNTRY`

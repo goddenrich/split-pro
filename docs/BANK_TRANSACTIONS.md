@@ -7,6 +7,7 @@ This feature was provided by @alexanderwassbjer, who is currently maintaining re
 ## Providers
 
 - Plaid is the recommended provider.
+- Lunch Flow is supported via its personal API (set `LUNCHFLOW_API_KEY`; bank connections are managed in the Lunch Flow dashboard).
 - GoCardless is deprecated and no longer accepts new signups.
 
 For Plaid-supported countries and institutions, see https://plaid.com/docs/institutions/.

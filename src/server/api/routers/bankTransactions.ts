@@ -46,6 +46,20 @@ export const bankTransactionsRouter = createTRPCRouter({
 
         return res;
       }
+      if (provider === 'LUNCHFLOW') {
+        const res = await bankTransactionService.connectToBank(ctx.session.user.id.toString());
+
+        if (!res) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to link to bank' });
+        }
+
+        await ctx.db.user.update({
+          where: { id: ctx.session.user.id },
+          data: { obapiProviderId: res.institutionId },
+        });
+
+        return res;
+      }
       const res = await bankTransactionService.connectToBank(
         ctx.session.user.id.toString(),
         ctx.session.user.preferredLanguage,
