@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { TRPCError } from '@trpc/server';
 import { format, subDays } from 'date-fns';
 import { z } from 'zod';
@@ -31,7 +32,8 @@ const AccountsResponse = z.object({
 const TransactionsResponse = z.object({
   transactions: z.array(
     z.object({
-      id: z.string(),
+      // Lunch Flow returns null ids for some transactions (see `withStableIds`).
+      id: z.string().nullish(),
       amount: z.number(),
       currency: z.string(),
       date: z.string(),
@@ -44,7 +46,7 @@ const TransactionsResponse = z.object({
 
 type LunchFlowTransaction = z.infer<typeof TransactionsResponse>['transactions'][number];
 type LunchFlowAccount = z.infer<typeof AccountsResponse>['accounts'][number];
-type WithAccountName = LunchFlowTransaction & { accountName?: string };
+type WithAccountName = Omit<LunchFlowTransaction, 'id'> & { id: string; accountName?: string };
 
 /**
  * Lunch Flow personal API. The API key belongs to a single Lunch Flow user, so the connection is
@@ -122,7 +124,10 @@ export class LunchFlowService {
         );
         const accountName = this.accountLabel(account);
 
-        return transactions.map((transaction) => ({ ...transaction, accountName }));
+        return this.withStableIds(account, transactions).map((transaction) => ({
+          ...transaction,
+          accountName,
+        }));
       }),
     );
 
@@ -160,6 +165,39 @@ export class LunchFlowService {
   /** `CachedBankData.obapiProviderId` is globally unique, so scope it per user. */
   static cacheKey(userId?: string | number) {
     return `lunchflow-${userId ?? ''}`;
+  }
+
+  /**
+   * Transaction ids drive the "already added" check and row selection, so ones Lunch Flow leaves
+   * null get a deterministic id derived from the transaction's contents (plus an occurrence index
+   * to keep otherwise identical rows apart).
+   */
+  private withStableIds(account: LunchFlowAccount, transactions: LunchFlowTransaction[]) {
+    const seen = new Map<string, number>();
+
+    return transactions.map((transaction) => {
+      if (transaction.id) {
+        return { ...transaction, id: transaction.id };
+      }
+
+      const hash = createHash('sha256')
+        .update(
+          [
+            account.id,
+            transaction.date,
+            transaction.amount,
+            transaction.currency,
+            transaction.description,
+            transaction.merchant,
+          ].join('|'),
+        )
+        .digest('hex')
+        .slice(0, 16);
+      const occurrence = seen.get(hash) ?? 0;
+      seen.set(hash, occurrence + 1);
+
+      return { ...transaction, id: `lf-${hash}-${occurrence}` };
+    });
   }
 
   private accountLabel(account: LunchFlowAccount) {
